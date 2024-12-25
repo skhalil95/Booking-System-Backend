@@ -8,6 +8,7 @@ import io
 import qrcode
 from django.core.files.base import ContentFile
 from booking.models import Booking
+import re
 
 # Swagger parameters
 from django.conf import settings
@@ -50,6 +51,9 @@ def create_booking(request):
             if not name or not civil_id or not start_time_str:
                 return JsonResponse({'error': 'All fields (name, civil_id, start_time) are required.'}, status=400)
 
+            if not re.fullmatch(r'^\d{12}$', civil_id):
+                return JsonResponse({'error': 'Civil ID must be exactly 12 digits.'}, status=400)
+
             try:
                 # Parse start_time
                 start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
@@ -73,7 +77,7 @@ def create_booking(request):
             booking = Booking(name=name, civil_id=civil_id, start_time=start_time)
 
             # Generate QR Code
-            qr_data = f"Booking for {name} ({civil_id}) from {start_time} to {end_time}"
+            qr_data = f"Booking for '{name}' with civil ID: ({civil_id}) from {start_time} to {end_time}"
             qr = qrcode.make(qr_data)
             qr_io = io.BytesIO()
             qr.save(qr_io, format='PNG')

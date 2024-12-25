@@ -4,7 +4,7 @@ import os
 
 class Booking(models.Model):
     name = models.CharField(max_length=255)
-    civil_id = models.CharField(max_length=20)
+    civil_id = models.BigIntegerField()
     start_time = models.DateTimeField()
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
 
