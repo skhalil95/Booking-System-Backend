@@ -8,7 +8,6 @@ import io
 import qrcode
 from django.core.files.base import ContentFile
 from booking.models import Booking
-import re
 
 # Swagger parameters
 from django.conf import settings
@@ -30,8 +29,8 @@ start_time_param = openapi.Parameter(
         type=openapi.TYPE_OBJECT,
         properties={
             'name': openapi.Schema(type=openapi.TYPE_STRING, description='Name of the user'),
-            'civil_id': openapi.Schema(type=openapi.TYPE_STRING, description='Civil ID of the user'),
-            'start_time': openapi.Schema(type=openapi.TYPE_STRING, description='Start time in format YYYY-MM-DD HH:MM:SS'),
+            'civil_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Civil ID of the user'),
+            'start_time': openapi.Schema(type=openapi.TYPE_STRING, description='Start time in format YYYY-MM-DD HH:MM'),
         },
         required=['name', 'civil_id', 'start_time'],
     ),
@@ -51,14 +50,18 @@ def create_booking(request):
             if not name or not civil_id or not start_time_str:
                 return JsonResponse({'error': 'All fields (name, civil_id, start_time) are required.'}, status=400)
 
-            if not re.fullmatch(r'^\d{12}$', civil_id):
-                return JsonResponse({'error': 'Civil ID must be exactly 12 digits.'}, status=400)
+            try:
+                civil_id = int(civil_id)  # Ensure it's an integer
+                if len(str(civil_id)) != 12:  # Convert to string and check length
+                    return JsonResponse({'error': 'Civil ID must be exactly 12 digits.'}, status=400)
+            except ValueError:
+                return JsonResponse({'error': 'Civil ID must be a valid integer.'}, status=400)
 
             try:
                 # Parse start_time
-                start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M:%S")
+                start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M")
             except ValueError:
-                return JsonResponse({'error': 'Invalid start_time format. Use YYYY-MM-DD HH:MM:SS.'}, status=400)
+                return JsonResponse({'error': 'Invalid start_time format. Use YYYY-MM-DD HH:MM.'}, status=400)
 
             # Calculate end_time
             duration_minutes = settings.BOOKING_DURATION
@@ -89,7 +92,7 @@ def create_booking(request):
                 'message': 'Booking created successfully',
                 'booking_id': booking.id,
                 'start_time': booking.start_time,
-                'end_time': booking.end_time()  # Call the dynamic method
+                'qr_code_url': booking.qr_code.url if booking.qr_code else None
             })
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON input.'}, status=400)
