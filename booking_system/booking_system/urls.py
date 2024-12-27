@@ -20,8 +20,6 @@ schema_view = get_schema_view(
 
 # Define the main URL patterns
 urlpatterns = [
-    # Admin site URLs
-    path('admin/', admin.site.urls),
 
     # Include URLs from the 'booking' app under the '/api/' prefix
     path('api/', include('booking.urls')),
@@ -29,8 +27,6 @@ urlpatterns = [
     # Swagger UI for API documentation at '/swagger/'
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 
-    # ReDoc UI for API documentation at '/redoc/'
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
 
 # Serve media files during development

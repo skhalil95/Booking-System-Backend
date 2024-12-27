@@ -142,10 +142,11 @@ def generate_booking_pdf(request):
 
     # Add text information to the PDF
     p.drawString(100, 800, f"Booking Ticket")
-    p.drawString(100, 780, f"Name: {booking.name}")
-    p.drawString(100, 760, f"Civil ID: {booking.civil_id}")
-    p.drawString(100, 740, f"Start Time: {booking.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-    p.drawString(100, 720, f"End Time: {(booking.start_time + timedelta(minutes=60)).strftime('%Y-%m-%d %H:%M:%S')}")
+    p.drawString(100, 780, f"Booking ID: {booking.id}")
+    p.drawString(100, 760, f"Name: {booking.name}")
+    p.drawString(100, 740, f"Civil ID: {booking.civil_id}")
+    p.drawString(100, 720, f"Start Time: {booking.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    p.drawString(100, 700, f"End Time: {(booking.start_time + timedelta(minutes=60)).strftime('%Y-%m-%d %H:%M:%S')}")
 
     # Attempt to add the QR code image to the PDF
     try:
