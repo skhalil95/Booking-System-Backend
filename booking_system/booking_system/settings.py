@@ -65,6 +65,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    env("FRONTEND_URL"),
+]
+
 ROOT_URLCONF = 'booking_system.urls'
 
 TEMPLATES = [

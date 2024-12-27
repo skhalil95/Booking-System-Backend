@@ -44,7 +44,8 @@ class BookingSerializer(serializers.ModelSerializer):
     class Meta:
         # Define the model and fields to include in the serialized output
         model = Booking
-        fields = ['id', 'name', 'civil_id', 'start_time', 'end_time', 'qr_code']
+        fields = ['id', 'name', 'civil_id', 'start_time', 'end_time', 'qr_code', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at']
 
     def validate_start_time(self, value):
         """
