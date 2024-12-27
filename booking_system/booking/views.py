@@ -10,11 +10,12 @@ from django.core.files.base import ContentFile
 from booking.models import Booking
 from reportlab.pdfgen import canvas
 
-# Swagger parameters
+# Importing necessary modules and settings
 from django.conf import settings
 
 from booking.serializers import BookingSerializer
 
+# Swagger parameter definitions for documentation
 name_param = openapi.Parameter(
     'name', openapi.IN_BODY, description="Name of the user", type=openapi.TYPE_STRING, required=True
 )
@@ -41,10 +42,15 @@ start_time_param = openapi.Parameter(
 )
 @api_view(['POST'])
 def create_booking(request):
+    """
+    Handles POST requests to create a new booking.
+    Validates booking data, checks for overlapping time slots,
+    saves the booking, and generates a QR code.
+    """
     if request.method == 'POST':
         serializer = BookingSerializer(data=request.data)
         if serializer.is_valid():
-            # Calculate booking duration and check conflicts
+            # Calculate booking duration and check for time slot conflicts
             duration_minutes = settings.BOOKING_DURATION
             start_time = serializer.validated_data['start_time']
             end_time = start_time + timedelta(minutes=duration_minutes)
@@ -54,9 +60,10 @@ def create_booking(request):
             ).exists()
 
             if overlapping_booking:
+                # Return error if there is a conflict with an existing booking
                 return JsonResponse({'error': 'A booking already exists for the selected time slot.'}, status=400)
 
-            # Save booking and generate QR code
+            # Save the booking and generate a QR code for it
             booking = serializer.save()
             qr_data = f"Booking for '{booking.name}' from {start_time} to {end_time}"
             qr = qrcode.make(qr_data)
@@ -65,13 +72,14 @@ def create_booking(request):
             booking.qr_code.save(f"qr_{booking.name}.png", ContentFile(qr_io.getvalue()), save=False)
             booking.save()
 
+            # Return a success response with the booking details
             response_data = {
                 'message': 'Booking created successfully',
                 'booking': BookingSerializer(booking).data
             }
-
             return JsonResponse(response_data, status=200)
 
+        # Return validation errors if any
         return JsonResponse(serializer.errors, status=400)
 
 
@@ -86,14 +94,18 @@ def create_booking(request):
 )
 @api_view(['GET'])
 def get_all_bookings(request):
+    """
+    Handles GET requests to retrieve all bookings.
+    Serializes and returns the booking data.
+    """
     if request.method == 'GET':
-        # Retrieve all bookings
+        # Fetch all bookings from the database
         bookings = Booking.objects.all()
 
-        # Serialize the data
+        # Serialize the booking data
         serializer = BookingSerializer(bookings, many=True)
 
-        # Return serialized data
+        # Return serialized data as a JSON response
         return JsonResponse({"bookings": serializer.data}, status=200)
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
@@ -107,37 +119,48 @@ def get_all_bookings(request):
 )
 @api_view(['GET'])
 def generate_booking_pdf(request):
+    """
+    Handles GET requests to generate a PDF ticket for a specific booking.
+    The PDF includes booking details and the QR code (if available).
+    """
     booking_id = request.GET.get('booking_id')
 
     if not booking_id:
+        # Return error if booking ID is missing
         return JsonResponse({'error': 'Booking ID is required.'}, status=400)
 
     try:
+        # Retrieve the booking from the database
         booking = Booking.objects.get(id=booking_id)
     except Booking.DoesNotExist:
+        # Return error if booking is not found
         return JsonResponse({'error': 'Booking not found.'}, status=404)
 
-    # Generate the PDF
+    # Generate the PDF with booking details
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer)
 
+    # Add text information to the PDF
     p.drawString(100, 800, f"Booking Ticket")
     p.drawString(100, 780, f"Name: {booking.name}")
     p.drawString(100, 760, f"Civil ID: {booking.civil_id}")
     p.drawString(100, 740, f"Start Time: {booking.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
     p.drawString(100, 720, f"End Time: {(booking.start_time + timedelta(minutes=60)).strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Add QR code if available
+    # Attempt to add the QR code image to the PDF
     try:
         if booking.qr_code:
             qr_code_path = booking.qr_code.path
             p.drawImage(qr_code_path, 100, 600, width=100, height=100)
     except Exception as e:
+        # Log error if QR code image cannot be added
         print(f"Error drawing QR Code: {e}")
 
+    # Finalize and save the PDF
     p.showPage()
     p.save()
 
+    # Return the PDF as a response
     buffer.seek(0)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Booking_{booking_id}.pdf"'
