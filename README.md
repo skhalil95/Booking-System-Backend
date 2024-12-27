@@ -1,4 +1,4 @@
-# Django Project ReadMe
+# Reservation Booking System
 
 ## Project Overview
 
@@ -37,7 +37,16 @@ To install all required dependencies, run the following command:
 pip install -r requirements.txt
 ```
 
-### 3. Apply Migrations
+### 3. Backend URLs Configuration
+
+This configuration allows the backend Django application to accept requests from the specified frontend URL.
+Make sure the following environment variables are correctly configured in your .env file located at the root of your project:
+
+```bash
+FRONTEND_URL=http://localhost:5173
+```
+
+### 4. Apply Migrations
 
 Run the following commands to apply database migrations:
 
@@ -46,7 +55,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 4. Run the Application
+### 5. Run the Application
 
 Start the development server by running:
 
