@@ -23,7 +23,13 @@ To set up and run this project, ensure you have the following installed:
 
 ## Installation
 
-### 1. Download Dependencies
+### 1. Navigate to project directory
+
+```bash
+cd booking_system
+```
+
+### 2. Download Dependencies
 
 To install all required dependencies, run the following command:
 
@@ -31,7 +37,7 @@ To install all required dependencies, run the following command:
 pip install -r requirements.txt
 ```
 
-### 2. Apply Migrations
+### 3. Apply Migrations
 
 Run the following commands to apply database migrations:
 
@@ -40,7 +46,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 3. Run the Application
+### 4. Run the Application
 
 Start the development server by running:
 
@@ -73,10 +79,3 @@ http://127.0.0.1:8000/swagger/
 For support, contact:
 
 - Email: [support@example.com](mailto:support@example.com)
-
----
-
-## readme.txt
-
-A `readme.txt` file with all required setup instructions is also available in the repository for quick reference.
-

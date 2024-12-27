@@ -15,16 +15,19 @@ To set up and run this project, ensure you have the following installed:
 
 Installation
 ------------
-1. Download Dependencies:
+1. Navigate to project directory
+cd booking_system
+
+2. Download Dependencies:
    Run the following command to install all required dependencies:
    > pip install -r requirements.txt
 
-2. Apply Migrations:
+3. Apply Migrations:
    Run the following commands to apply database migrations:
    > python manage.py makemigrations
    > python manage.py migrate
 
-3. Run the Application:
+4. Run the Application:
    Start the development server by running:
    > python manage.py runserver
 
