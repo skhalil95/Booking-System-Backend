@@ -1,5 +1,5 @@
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -8,6 +8,7 @@ import io
 import qrcode
 from django.core.files.base import ContentFile
 from booking.models import Booking
+from reportlab.pdfgen import canvas
 
 # Swagger parameters
 from django.conf import settings
@@ -80,7 +81,7 @@ def create_booking(request):
             booking = Booking(name=name, civil_id=civil_id, start_time=start_time)
 
             # Generate QR Code
-            qr_data = f"Booking for '{name}' with civil ID: ({civil_id}) from {start_time} to {end_time}"
+            qr_data = f"Booking for '{name}' from {start_time} to {end_time}"
             qr = qrcode.make(qr_data)
             qr_io = io.BytesIO()
             qr.save(qr_io, format='PNG')
@@ -129,3 +130,49 @@ def get_all_bookings(request):
         return JsonResponse({"bookings": booking_list}, status=200)
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
+
+@swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter('booking_id', openapi.IN_QUERY, description="ID of the booking", type=openapi.TYPE_INTEGER)
+    ],
+    responses={200: "PDF generated successfully", 400: "Invalid request"}
+)
+@api_view(['GET'])
+def generate_booking_pdf(request):
+    booking_id = request.GET.get('booking_id')
+
+    if not booking_id:
+        return JsonResponse({'error': 'Booking ID is required.'}, status=400)
+
+    try:
+        booking = Booking.objects.get(id=booking_id)
+    except Booking.DoesNotExist:
+        return JsonResponse({'error': 'Booking not found.'}, status=404)
+
+    # Generate the PDF
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer)
+
+    p.drawString(100, 800, f"Booking Ticket")
+    p.drawString(100, 780, f"Name: {booking.name}")
+    p.drawString(100, 760, f"Civil ID: {booking.civil_id}")
+    p.drawString(100, 740, f"Start Time: {booking.start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+    p.drawString(100, 720, f"End Time: {(booking.start_time + timedelta(minutes=60)).strftime('%Y-%m-%d %H:%M:%S')}")
+
+    # Add QR code if available
+    try:
+        if booking.qr_code:
+            qr_code_path = booking.qr_code.path
+            p.drawImage(qr_code_path, 100, 600, width=100, height=100)
+    except Exception as e:
+        print(f"Error drawing QR Code: {e}")
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Booking_{booking_id}.pdf"'
+    buffer.close()
+    return response
