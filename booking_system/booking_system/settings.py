@@ -68,7 +68,6 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     env("FRONTEND_URL"),
 ]
-#HI
 ROOT_URLCONF = 'booking_system.urls'
 
 TEMPLATES = [
