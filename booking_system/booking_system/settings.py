@@ -18,6 +18,8 @@ env = environ.Env()
 environ.Env.read_env()
 
 BOOKING_DURATION = env.int('BOOKING_DURATION')  # Add BOOKING_DURATION
+BOOKING_STARTING_WINDOW_TIME = env.int('BOOKING_STARTING_WINDOW_TIME')
+BOOKING_ENDING_WINDOW_TIME = env.int('BOOKING_ENDING_WINDOW_TIME')
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -61,10 +63,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-]
-
-CORS_ALLOWED_ORIGINS = [
-    env("FRONTEND_URL"),
 ]
 
 ROOT_URLCONF = 'booking_system.urls'

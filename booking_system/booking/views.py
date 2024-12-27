@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from datetime import datetime, timedelta
+from datetime import timedelta
 import io
 import qrcode
 from django.core.files.base import ContentFile
@@ -12,6 +12,8 @@ from reportlab.pdfgen import canvas
 
 # Swagger parameters
 from django.conf import settings
+
+from booking.serializers import BookingSerializer
 
 name_param = openapi.Parameter(
     'name', openapi.IN_BODY, description="Name of the user", type=openapi.TYPE_STRING, required=True
@@ -40,64 +42,38 @@ start_time_param = openapi.Parameter(
 @api_view(['POST'])
 def create_booking(request):
     if request.method == 'POST':
-        try:
-            # Parse JSON input
-            data = json.loads(request.body)
-            name = data.get('name')
-            civil_id = data.get('civil_id')
-            start_time_str = data.get('start_time')
-
-            # Validate inputs
-            if not name or not civil_id or not start_time_str:
-                return JsonResponse({'error': 'All fields (name, civil_id, start_time) are required.'}, status=400)
-
-            try:
-                civil_id = int(civil_id)  # Ensure it's an integer
-                if len(str(civil_id)) != 12:  # Convert to string and check length
-                    return JsonResponse({'error': 'Civil ID must be exactly 12 digits.'}, status=400)
-            except ValueError:
-                return JsonResponse({'error': 'Civil ID must be a valid integer.'}, status=400)
-
-            try:
-                # Parse start_time
-                start_time = datetime.strptime(start_time_str, "%Y-%m-%d %H:%M")
-            except ValueError:
-                return JsonResponse({'error': 'Invalid start_time format. Use YYYY-MM-DD HH:MM.'}, status=400)
-
-            # Calculate end_time
+        serializer = BookingSerializer(data=request.data)
+        if serializer.is_valid():
+            # Calculate booking duration and check conflicts
             duration_minutes = settings.BOOKING_DURATION
+            start_time = serializer.validated_data['start_time']
             end_time = start_time + timedelta(minutes=duration_minutes)
 
-            # Check for overlapping bookings
             overlapping_booking = Booking.objects.filter(
-                start_time__lt=end_time,
-                start_time__gte=start_time
+                start_time__lt=end_time, start_time__gte=start_time
             ).exists()
 
             if overlapping_booking:
                 return JsonResponse({'error': 'A booking already exists for the selected time slot.'}, status=400)
 
-            # Create Booking
-            booking = Booking(name=name, civil_id=civil_id, start_time=start_time)
-
-            # Generate QR Code
-            qr_data = f"Booking for '{name}' from {start_time} to {end_time}"
+            # Save booking and generate QR code
+            booking = serializer.save()
+            qr_data = f"Booking for '{booking.name}' from {start_time} to {end_time}"
             qr = qrcode.make(qr_data)
             qr_io = io.BytesIO()
             qr.save(qr_io, format='PNG')
-            booking.qr_code.save(f"qr_{name}.png", ContentFile(qr_io.getvalue()), save=False)
-
+            booking.qr_code.save(f"qr_{booking.name}.png", ContentFile(qr_io.getvalue()), save=False)
             booking.save()
 
-            return JsonResponse({
+            response_data = {
                 'message': 'Booking created successfully',
-                'booking_id': booking.id,
-                'start_time': booking.start_time,
-                'qr_code_url': booking.qr_code.url if booking.qr_code else None
-            })
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'Invalid JSON input.'}, status=400)
-    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+                'booking': BookingSerializer(booking).data
+            }
+
+            return JsonResponse(response_data, status=200)
+
+        return JsonResponse(serializer.errors, status=400)
+
 
 @swagger_auto_schema(
     method='get',
@@ -115,19 +91,10 @@ def get_all_bookings(request):
         bookings = Booking.objects.all()
 
         # Serialize the data
-        booking_list = [
-            {
-                "id": booking.id,
-                "name": booking.name,
-                "civil_id": booking.civil_id,
-                "start_time": booking.start_time.strftime("%Y-%m-%d %H:%M:%S"),
-                "end_time": (booking.start_time + timedelta(minutes=60)).strftime("%Y-%m-%d %H:%M:%S"),
-                "qr_code_url": booking.qr_code.url if booking.qr_code else None
-            }
-            for booking in bookings
-        ]
+        serializer = BookingSerializer(bookings, many=True)
 
-        return JsonResponse({"bookings": booking_list}, status=200)
+        # Return serialized data
+        return JsonResponse({"bookings": serializer.data}, status=200)
     return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 
