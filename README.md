@@ -83,6 +83,16 @@ http://127.0.0.1:8000/swagger/
 
 ---
 
+---
+
+## Assumptions
+
+1. Reservation Slot Duration: Each reservation slot is fixed at 60 minutes.
+2. Slot Availability: Slots are available daily between 9:00 AM and 4:00 PM.
+3. Weekly Calendar Scope: The booking system is designed to manage reservations on a weekly basis, focusing on short-term planning rather than long-term or yearly reservations.
+
+---
+
 ## Contact
 
 For support, contact:
