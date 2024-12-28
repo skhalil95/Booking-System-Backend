@@ -83,8 +83,6 @@ http://127.0.0.1:8000/swagger/
 
 ---
 
----
-
 ## Assumptions
 
 1. Reservation Slot Duration: Each reservation slot is fixed at 60 minutes.
